@@ -59,7 +59,6 @@ encode ()
 
 fileSearch ()
 {
-#   [ ! -d "$outputFolder" ] && mkdir "$outputFolder"  #  creates the output folder if it doesn't exist
    for inputFileName in *  # stores each file in the directory into inputFileName 1 at a time, then does the loop
    do
       if [ -f "$inputFileName" ]  # test if it is a true file
@@ -118,7 +117,6 @@ titleEncode ()
 }
 
 [ ! -d "$processedFolder" ] && mkdir "$processedFolder"  #  creates the processed folder if it doesn't exist
-#[ ! -d "$outputFolder" ] && mkdir "$outputFolder"  #  creates the output folder if it doesn't exist
 
 case "$1" in
 
@@ -141,6 +139,7 @@ case "$1" in
    ;;
 
 -c|--chapter)
+   fileType=( iso )
    if [ -n "$2" ]
    then
       inputFileName="$2"
@@ -158,6 +157,7 @@ case "$1" in
    ;;
 
 -t|--title)
+   fileType=( iso )
    if [ -n "$2" ]
    then
       inputFileName="$2"
