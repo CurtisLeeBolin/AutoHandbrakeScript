@@ -31,13 +31,13 @@ otherSettings="--markers"
 containerType="mkv"
 containerSettings="--format $containerType"
 
-readonly DEFAULT_OUTPUT_FOLDER="output"
-processedFolder="processed"
-logFile="handbrake.log"
+readonly DEFAULT_OUTPUT_DIRECTORY="output"
+readonly PROCESSED_DIRECTORY="processed"
+readonly LOG_FILE="handbrake.log"
 
 logger ()
 {
-   echo "$(date +'[ %d %b %Y %H:%M ]') :: $*" | tee -a "$logFile"
+   echo "$(date +'[ %d %b %Y %H:%M ]') :: $*" | tee -a "$LOG_FILE"
 }
 
 checkForAc3 ()
@@ -53,7 +53,7 @@ encode ()
 {
    checkForAc3
    logger "Encoding $inputFileName to $videoName.$containerType ..."
-   HandBrakeCLI $videoSettings $x264Settings $audioSettings $subtitleSettings $otherSettings $containerSettings --input "$inputFileName" --output "$outputFolder"/"$videoName"."$containerType" || encoderStatus="error"
+   HandBrakeCLI $videoSettings $x264Settings $audioSettings $subtitleSettings $otherSettings $containerSettings --input "$inputFileName" --output "$outputDirectory"/"$videoName"."$containerType" || encoderStatus="error"
    logger "Encoding Completed."
 }
 
@@ -77,18 +77,18 @@ fileSearch ()
 
 fileEncode ()
 {
-   outputFolder="$DEFAULT_OUTPUT_FOLDER"
-   [ ! -d "$outputFolder" ] && mkdir -p "$outputFolder"  #  creates the output folder if it doesn't exist
+   outputDirectory="$DEFAULT_OUTPUT_DIRECTORY"
+   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
    encode
-   mv "$inputFileName" "$processedFolder"
+   mv "$inputFileName" "$PROCESSED_DIRECTORY"/
 }
 
 chapterEncode ()
 {
    encoderStatus="run"
-   outputFolder="$DEFAULT_OUTPUT_FOLDER/${inputFileName%.*}"
+   outputDirectory="$DEFAULT_OUTPUT_DIRECTORY/${inputFileName%.*}"
    chapterNumber=1
-   [ ! -d "$outputFolder" ] && mkdir -p "$outputFolder"  #  creates the output folder if it doesn't exist
+   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
 #   until [ "encoderStatus" = "error" ]  # currently handbrakecli isn't exiting on errors properly 
    until [ $chapterNumber == 50 ]
    do
@@ -97,15 +97,15 @@ chapterEncode ()
       encode
       ((chapterNumber++))
    done
-   mv "$inputFileName" "$processedFolder"
+   mv "$inputFileName" "$PROCESSED_DIRECTORY"/
 }
 
 titleEncode ()
 {
    encoderStatus="run"
-   outputFolder="$DEFAULT_OUTPUT_FOLDER/${inputFileName%.*}"
+   outputDirectory="$DEFAULT_OUTPUT_DIRECTORY/${inputFileName%.*}"
    titleNumber=1
-   [ ! -d "$outputFolder" ] && mkdir -p "$outputFolder"  #  creates the output folder if it doesn't exist
+   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
    until [ "encoderStatus" = "error" -o $titleNumber == 50 ]
    do
       otherSettings="--title $titleNumber"
@@ -113,10 +113,10 @@ titleEncode ()
       encode
       ((titleNumber++))
    done
-   mv "$inputFileName" "$processedFolder"
+   mv "$inputFileName" "$PROCESSED_DIRECTORY"/
 }
 
-[ ! -d "$processedFolder" ] && mkdir "$processedFolder"  #  creates the processed folder if it doesn't exist
+[ ! -d "$PROCESSED_DIRECTORY" ] && mkdir "$PROCESSED_DIRECTORY"  #  creates the processed directory if it doesn't exist
 
 case "$1" in
 
