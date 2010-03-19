@@ -123,7 +123,7 @@ case "$1" in
 -h|--help)
 
    echo
-   echo "Usage: handbrake [OPTION]"
+   echo "Usage: auto-handbrakecli-script.sh [OPTION]"
    echo
    echo "-h, --help                     Prints this help information."
    echo
