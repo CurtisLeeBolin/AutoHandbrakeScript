@@ -94,7 +94,7 @@ chapterEncode ()
 #   until [ "encoderStatus" = "error" ]  # currently handbrakecli isn't exiting on errors properly 
    until [ $chapterNumber == 50 ]
    do
-      otherSettings="--markers --chapters $chapterNumber $titleOption"
+      otherSettings="--markers --chapters $chapterNumber $chapterOption"
       videoName="$chapterNumber"
       encode
       ((chapterNumber++))
