@@ -21,23 +21,20 @@
 
 fileType=( avi flv iso mkv mp4 mpeg mpg wmv )
 
-videoSettings="--encoder x264 --two-pass --turbo --vb 768 --decomb --loose-anamorphic"
-x264Settings="--x264opts b-adapt=2:rc-lookahead=50"
-#x264Settings="--x264opts subq=6:partitions=all:8x8dct:me=umh:frameref=5:bframes=3:b-pyramid=1:weightb=1"
-#x264Settings="--x264opts ref=6:mixed-refs=1:bframes=3:b-pyramid=1:weightb=1:subme=7:trellis=2:analyse=all:8x8dct=1:no-fast-pskip=1:no-dct-decimate=1:me=umh:merange=64:filter=-2,-1:direct=auto"
-audioSettings="--audio 1 --aencoder faac --ab 128 --mixdown dpl2 --arate 48 --drc 2.5"
-subtitleSettings="--native-language eng --subtitle-forced scan --subtitle scan"
-otherSettings="--markers"
-containerType="mkv"
-containerSettings="--format $containerType"
-
+readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --two-pass --turbo --vb 768 --decomb --loose-anamorphic"
+readonly DEFAULT_X264_SETTINGS="--x264opts b-adapt=2:rc-lookahead=50"
+readonly DEFAULT_AUDIO_SETTINGS="--audio 1 --aencoder faac --ab 128 --mixdown dpl2 --arate 48 --drc 2.5"
+readonly DEFAULT_SUBTITLE_SETTINGS="--native-language eng --subtitle-forced scan --subtitle scan"
+readonly DEFAULT_CONTAINER_TYPE="mkv"
+readonly DEFAULT_CONTAINER_SETTINGS="--format $DEFAULT_CONTAINER_TYPE"
 readonly DEFAULT_OUTPUT_DIRECTORY="output"
-readonly PROCESSED_DIRECTORY="processed"
-readonly LOG_FILE="handbrake.log"
+readonly DEFAULT_PROCESSED_DIRECTORY="processed"
+readonly DEFAULT_LOG_FILE="handbrake.log"
+otherSettings="--markers"
 
 logger ()
 {
-   echo "$(date +'[ %d %b %Y %H:%M ]') :: $*" | tee -a "$LOG_FILE"
+   echo "$(date +'[ %d %b %Y %H:%M ]') :: $*" | tee -a "$DEFAULT_LOG_FILE"
 }
 
 checkForAc3 ()
@@ -46,14 +43,19 @@ checkForAc3 ()
    inputAudioCodec=`mplayer -vo null -ao null -frames 0 -identify 2>&1 /dev/null "$inputFileName" | grep "^ID_AUDIO_CODEC=a52"`
 
    # if ac3 is detected, then ac3 pass through, else default audio setting
-   [ "$inputAudioCodec" =  "ID_AUDIO_CODEC=a52" ] && audioSettings="--audio 1 --aencoder ac3"
+   if [ "$inputAudioCodec" =  "ID_AUDIO_CODEC=a52" ]
+   then
+      audioSettings="--audio 1 --aencoder ac3"
+   else
+      audioSettings="$DEFAULT_AUDIO_SETTINGS"
+   fi
 }
 
 encode ()
 {
    checkForAc3
-   logger "Encoding $inputFileName to $videoName.$containerType ..."
-   HandBrakeCLI $videoSettings $x264Settings $audioSettings $subtitleSettings $otherSettings $containerSettings --input "$inputFileName" --output "$outputDirectory"/"$videoName"."$containerType" || encoderStatus="error"
+   logger "Encoding $inputFileName to $videoName.$DEFAULT_CONTAINER_TYPE ..."
+   HandBrakeCLI $DEFAULT_VIDEO_SETTINGS $DEFAULT_X264_SETTINGS $audioSettings $DEFAULT_SUBTITLE_SETTINGS $otherSettings $DEFAULT_CONTAINER_SETTINGS --input "$inputFileName" --output "$outputDirectory"/"$videoName"."$DEFAULT_CONTAINER_TYPE" || encoderStatus="error"
    logger "Encoding Completed."
 }
 
@@ -80,7 +82,7 @@ fileEncode ()
    outputDirectory="$DEFAULT_OUTPUT_DIRECTORY"
    [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
    encode
-   mv "$inputFileName" "$PROCESSED_DIRECTORY"/
+   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
 }
 
 chapterEncode ()
@@ -92,12 +94,12 @@ chapterEncode ()
 #   until [ "encoderStatus" = "error" ]  # currently handbrakecli isn't exiting on errors properly 
    until [ $chapterNumber == 50 ]
    do
-      otherSettings="--chapters $chapterNumber $titleOption"
+      otherSettings="--markers --chapters $chapterNumber $titleOption"
       videoName="$chapterNumber"
       encode
       ((chapterNumber++))
    done
-   mv "$inputFileName" "$PROCESSED_DIRECTORY"/
+   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
 }
 
 titleEncode ()
@@ -108,15 +110,15 @@ titleEncode ()
    [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
    until [ "encoderStatus" = "error" -o $titleNumber == 50 ]
    do
-      otherSettings="--title $titleNumber"
+      otherSettings="--markers --title $titleNumber"
       videoName="$titleNumber"
       encode
       ((titleNumber++))
    done
-   mv "$inputFileName" "$PROCESSED_DIRECTORY"/
+   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
 }
 
-[ ! -d "$PROCESSED_DIRECTORY" ] && mkdir "$PROCESSED_DIRECTORY"  #  creates the processed directory if it doesn't exist
+[ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir "$DEFAULT_PROCESSED_DIRECTORY"  #  creates the processed directory if it doesn't exist
 
 case "$1" in
 
