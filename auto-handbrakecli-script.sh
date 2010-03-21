@@ -85,35 +85,27 @@ fileEncode ()
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
 }
 
-chapterEncode ()
+isoEncode ()
 {
-   encoderStatus="run"
    outputDirectory="$DEFAULT_OUTPUT_DIRECTORY/${inputFileName%.*}"
-   chapterNumber=1
    [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
-#   until [ "encoderStatus" = "error" ]  # currently handbrakecli isn't exiting on errors properly 
-   until [ $chapterNumber == 50 ]
+#   encoderStatus="run"                                                      #
+#   for (( chapterNumber=1 ; "encoderStatus" = "error" ; chapterNumber++ ))  # currently handbrakecli isn't exiting on errors properly 
+   for (( count=1 ; count == 50 ; count++ ))
    do
-      otherSettings="--markers --chapters $chapterNumber $chapterOption"
-      videoName="$chapterNumber"
+      if [ encodeType=="title" ]
+      then
+         otherSettings="--markers --title $titleNumber"
+      else
+         otherSettings="--markers --chapters $chapterNumber $chapterOption"
+      fi
+      if [ count<10 ]
+      then
+         videoName="$(encodeType)0$count"
+      else
+         videoName="$encodeType$count"
+      fi      
       encode
-      ((chapterNumber++))
-   done
-   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
-}
-
-titleEncode ()
-{
-   encoderStatus="run"
-   outputDirectory="$DEFAULT_OUTPUT_DIRECTORY/${inputFileName%.*}"
-   titleNumber=1
-   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
-   until [ "encoderStatus" = "error" -o $titleNumber == 50 ]
-   do
-      otherSettings="--markers --title $titleNumber"
-      videoName="$titleNumber"
-      encode
-      ((titleNumber++))
    done
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
 }
@@ -141,6 +133,7 @@ case "$1" in
    ;;
 
 -c|--chapter)
+   encodeType="chapter"
    fileType=( iso )
    if [ -n "$2" ]
    then
@@ -151,21 +144,22 @@ case "$1" in
       else
          chapterOption="--longest"
       fi
-      chapterEncode
+      isoEncode
    else
-      encodeCommand="chapterEncode"
+      encodeCommand="isoEncode"
       fileSearch
    fi
    ;;
 
 -t|--title)
+   encodeType="title"
    fileType=( iso )
    if [ -n "$2" ]
    then
       inputFileName="$2"
-      titleEncode
+      isoEncode
    else
-      encodeCommand="titleEncode"
+      encodeCommand="isoEncode"
       fileSearch
    fi
    ;;
