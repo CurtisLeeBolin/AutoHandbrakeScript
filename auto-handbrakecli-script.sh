@@ -43,12 +43,8 @@ checkForAc3 ()
    inputAudioCodec=`mplayer -vo null -ao null -frames 0 -identify 2>&1 /dev/null "$inputFileName" | grep "^ID_AUDIO_CODEC=a52"`
 
    # if ac3 is detected, then ac3 pass through, else default audio setting
-   if [ "$inputAudioCodec" =  "ID_AUDIO_CODEC=a52" ]
-   then
-      audioSettings="--audio 1 --aencoder ac3"
-   else
-      audioSettings="$DEFAULT_AUDIO_SETTINGS"
-   fi
+   audioSettings="$DEFAULT_AUDIO_SETTINGS"
+   [ "$inputAudioCodec" =  "ID_AUDIO_CODEC=a52" ] && audioSettings="--audio 1 --aencoder ac3"
 }
 
 encode ()
@@ -93,18 +89,10 @@ isoEncode ()
 #   for (( chapterNumber=1 ; "encoderStatus" = "error" ; chapterNumber++ ))  # currently handbrakecli isn't exiting on errors properly 
    for (( count=1; count<50; count++ ))
    do
-      if [ encodeType=="title" ]
-      then
-         otherSettings="--markers --title $count"
-      else
-         otherSettings="--markers --chapters $count $chapterOption"
-      fi
-      if [ count<10 ]
-      then
-         videoName="$(encodeType)0$count"
-      else
-         videoName="$encodeType$count"
-      fi      
+      otherSettings="--markers --chapters $count $chapterOption"
+      [ $encodeType=="title" ] && otherSettings="--markers --title $count"
+      videoName="$encodeType$count"
+      [ "$count" -lt "10" ] && videoName="${encodeType}0$count"
       encode
    done
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
