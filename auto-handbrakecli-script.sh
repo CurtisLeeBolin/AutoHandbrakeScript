@@ -91,13 +91,13 @@ isoEncode ()
    [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
 #   encoderStatus="run"                                                      #
 #   for (( chapterNumber=1 ; "encoderStatus" = "error" ; chapterNumber++ ))  # currently handbrakecli isn't exiting on errors properly 
-   for (( count=1 ; count == 50 ; count++ ))
+   for (( count=1; count<50; count++ ))
    do
       if [ encodeType=="title" ]
       then
-         otherSettings="--markers --title $titleNumber"
+         otherSettings="--markers --title $count"
       else
-         otherSettings="--markers --chapters $chapterNumber $chapterOption"
+         otherSettings="--markers --chapters $count $chapterOption"
       fi
       if [ count<10 ]
       then
