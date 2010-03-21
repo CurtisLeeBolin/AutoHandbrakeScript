@@ -135,15 +135,11 @@ case "$1" in
 -c|--chapter)
    encodeType="chapter"
    fileType=( iso )
+   chapterOption="--longest"
    if [ -n "$2" ]
    then
       inputFileName="$2"
-      if [ -n "$3" ]
-      then
-         chapterOption="--title $3"
-      else
-         chapterOption="--longest"
-      fi
+      [ -n "$3" ] && chapterOption="--title $3"
       isoEncode
    else
       encodeCommand="isoEncode"
