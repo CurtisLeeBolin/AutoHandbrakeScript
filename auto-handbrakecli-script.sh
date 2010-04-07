@@ -19,7 +19,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###############################################################################
 
-fileType=( avi flv iso mkv mp4 mpeg mpg wmv )
+fileType=( avi flv iso mp4 mpeg mpg wmv )
 
 readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --two-pass --turbo --vb 768 --decomb --loose-anamorphic"
 readonly DEFAULT_X264_SETTINGS="--x264opts b-adapt=2:rc-lookahead=50"
@@ -109,14 +109,19 @@ case "$1" in
    echo
    echo "-h, --help                     Prints this help information."
    echo
-   echo "-c, --chapter [FILE] [TITLE]   Encodes each chapter of the loggest title of the iso files"
-   echo "                               in that directory"
-   echo "                               File name is optional and title number of the file is optional"
+   echo "-c, --chapter [FILE] [TITLE]   Encodes each chapter of the loggest"
+   echo "                               title of the iso files in that directory."
+   echo "                               File name is optional and title number of"
+   echo "                               the file is optional."
    echo
-   echo "-t, --title [FILE]             Encodes each title of the iso files in that directory"
-   echo "                               File name is optional"
+   echo "-t, --title [FILE]             Encodes each title of the iso files in that"
+   echo "                               directory."
+   echo "                               File name is optional."
    echo
-   echo "With no option all video files in the directory will be encoded. Loggest title of an iso file."
+   echo "-d, --directory                Endodes files one directory deep."
+   echo
+   echo "With no option all video files in the directory will be encoded. Loggest title"
+   echo "of an iso file."
    echo "If a file name is given, only that file will be encoded"
    ;;
 
@@ -147,6 +152,27 @@ case "$1" in
       fileSearch
    fi
    ;;
+
+-d|--directory)
+   startingDiretory=`pwd`
+   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+   [ ! -d "$DEFAULT_OUTPUT_DIRECTORY" ] && mkdir -p "$DEFAULT_OUTPUT_DIRECTORY"
+   encodeCommand="fileEncode"
+   fileSearch
+   for directoryName in *
+   do
+      if [ -d "$directoryName" ]  # test if it is a true directory
+      then
+         cd "$directoryName"
+         [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+         [ ! -d "$DEFAULT_OUTPUT_DIRECTORY" ] && mkdir -p "$DEFAULT_OUTPUT_DIRECTORY"
+         fileSearch
+         cd ../
+      fi
+   done
+   cd $startingDiretory 
+   ;;
+   
 
 *)
    if [ -n "$1" ]
