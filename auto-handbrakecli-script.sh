@@ -185,6 +185,9 @@ printUsage ()
    echo "-- [FILE]"
    echo "   If a file name is given, only that file will be encoded"
    echo
+   echo "-m, --mythtv [4:3 or 16:9]"
+   echo "   Sets extra setting for mythtv recordings.  MUST BE LAST OPTION"
+   echo
    echo "With no option all video files in the directory will be encoded and"
    echo "loggest title of an iso file."
    echo
@@ -193,67 +196,80 @@ printUsage ()
 mode=""
 
 if [ -z "$1" ]
-   then
-      simpleDirectoryMode
-   else
-      until [ -z "$1" ]; do
-      	# use a case statement to test vars. we always test
-      	# test $1 and shift at the end of the for block.
-      	case $1 in
-      	   -h|--help)
-               printUsage
-               exit 0
-            ;;
-      		-c|--chapter )
-      		   # shift, so the string after --home becomes
-   	    		# our new $1. then save the value.
-   	    		[ -n "$mode" ] && errorFound
-      		   shift
-      		   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
-      		   shift
-      		   [ -n "$1" -a "$1" != "-*" ] && titleNumber="$1"
-      		   mode="chapterMode"
-            ;;
-      		-t|--title )
-      		   [ -n "$mode" ] && errorFound
-      		   shift
-      		   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
-      		   shift
-      		   mode="titleMode"
-      		;;
-      		-d|--directory )
-      		   [ -n "$mode" ] && errorFound
-      		   mode="directoryMode"
-   		   ;;
-      		-- )
-      		   [ -n "$mode" ] && errorFound
-      			# set all the following arguments as files
-      			shift
-      		   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
-      		   mode="fileMode"
-      		   #filelist=
-               #filelist="$filelist $@"
-      		;;
-      		-* )
-      			echo "Unrecognized option: $1"
-      			[ -n "$mode" ] && errorFound
-      		;;
-      		--* )
-      			echo "Unrecognized option: $1"
-      			[ -n "$mode" ] && errorFound
-      		;;
-      		* )
-      		   printUsage
-               exit 0
-      		;;
-      	esac
+then
+   simpleDirectoryMode
+else
+   until [ -z "$1" ]; do
+   	# use a case statement to test vars. we always test
+   	# test $1 and shift at the end of the for block.
+   	case $1 in
+   	   -h|--help)
+            printUsage
+            exit 0
+         ;;
+         -c|--chapter )
+   		   # shift, so the string after --home becomes
+   	   	# our new $1. then save the value.
+   	   	[ -n "$mode" ] && errorFound
+      	   shift
+      	   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
+      	   shift
+      	   [ -n "$1" -a "$1" != "-*" ] && titleNumber="$1"
+      	   mode="chapterMode"
+         ;;
+      	-t|--title )
+      	   [ -n "$mode" ] && errorFound
+      	   shift
+      	   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
+      	   shift
+      	   mode="titleMode"
+      	;;
+      	-d|--directory )
+      	   [ -n "$mode" ] && errorFound
+      	   mode="directoryMode"
+   		;;
+      	-- )
+      	   [ -n "$mode" ] && errorFound
+      		# set all the following arguments as files
+      		shift
+      	   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
+      	   mode="fileMode"
+      	   #filelist=
+            #filelist="$filelist $@"
+      	;;
+      	-m|--mythtv )
+      	   shift
+      	   [ ! -n "$1" ] && errorFound
+      	   if [ "$1" == "4:3" ]
+      	   then
+      	      otherSettings="$otherSettings --crop 6:0:0:0 --width 640 --height 480"
+      	   elif [ "$1" == "16:9" ]
+      	   then
+      	      otherSettings="$otherSettings --crop 66:60:0:0 --width 640 --height 360"
+      	   else
+      	      errorFound
+      	   fi
+      	;;
+      	-* )
+      		echo "Unrecognized option: $1"
+      		[ -n "$mode" ] && errorFound
+      	;;
+      	--* )
+      		echo "Unrecognized option: $1"
+      		[ -n "$mode" ] && errorFound
+      	;;
+      	* )
+      	   printUsage
+            exit 0
+      	;;
+      esac
 
-      	shift
+     	shift
 
-      	if [ "$#" = "0" ]; then
-      		break
-      	fi
-      done
+     	if [ "$#" = "0" ]; then
+     		break
+     	fi
+   done
 fi
 
 $mode
