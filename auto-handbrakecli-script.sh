@@ -46,7 +46,7 @@ checkForAc3 ()
    [ "$inputAudioCodec" =  "ID_AUDIO_CODEC=a52" ] && audioSettings="--audio 1 --aencoder ac3"
 }
 
-fileEncode ()
+fileTranscode ()
 {
    checkForAc3
    logger "Encoding $inputFileName to $videoName.$DEFAULT_CONTAINER_TYPE ..."
@@ -74,7 +74,7 @@ fileSearch ()
    done
 }
 
-isoEncode ()
+isoTranscode ()
 {
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
    outputDirectory="${inputFileName%.*}/"
@@ -87,7 +87,7 @@ isoEncode ()
       [ $encodeType=="title" ] && otherSettings="--markers --title $count"
       videoName="$encodeType$count"
       [ "$count" -lt "10" ] && videoName="${encodeType}0$count"
-      fileEncode
+      fileTranscode
    done
 }
 
@@ -100,16 +100,16 @@ case "$1" in
    echo
    echo "-h, --help                     Prints this help information."
    echo
-   echo "-c, --chapter [FILE] [TITLE]   Encodes each chapter of the loggest"
+   echo "-c, --chapter [FILE] [TITLE]   Transcodes each chapter of the loggest"
    echo "                               title of the iso files in that directory."
    echo "                               File name is optional and title number of"
    echo "                               the file is optional."
    echo
-   echo "-t, --title [FILE]             Encodes each title of the iso files in that"
+   echo "-t, --title [FILE]             Transcodes each title of the iso files in that"
    echo "                               directory."
    echo "                               File name is optional."
    echo
-   echo "-d, --directory                Endodes files one directory deep."
+   echo "-d, --directory                Transcodes files one directory deep."
    echo
    echo "With no option all video files in the directory will be encoded. Loggest title"
    echo "of an iso file."
@@ -124,9 +124,9 @@ case "$1" in
    then
       inputFileName="$2"
       [ -n "$3" ] && chapterOption="--title $3"
-      isoEncode
+      isoTranscode
    else
-      encodeCommand="isoEncode"
+      encodeCommand="isoTranscode"
       fileSearch
    fi
    ;;
@@ -137,9 +137,9 @@ case "$1" in
    if [ -n "$2" ]
    then
       inputFileName="$2"
-      isoEncode
+      isoTranscode
    else
-      encodeCommand="isoEncode"
+      encodeCommand="isoTranscode"
       fileSearch
    fi
    ;;
@@ -147,7 +147,7 @@ case "$1" in
 -d|--directory)
    startingDiretory=`pwd`
    [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
-   encodeCommand="fileEncode"
+   encodeCommand="fileTranscode"
    fileSearch
    for directoryName in *
    do
@@ -168,9 +168,9 @@ case "$1" in
    then
       inputFileName="$1"
       videoName=${inputFileName%.*}
-      fileEncode
+      fileTranscode
    else
-      encodeCommand="fileEncoexit
+      encodeCommand="fileTranscode"
       fileSearch
    fi
    ;;
