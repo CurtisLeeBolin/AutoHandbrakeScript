@@ -79,8 +79,8 @@ isoTranscode ()
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
    outputDirectory="${inputFileName%.*}/"
    [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
-#   encoderStatus="run"                                                      #
-#   for (( chapterNumber=1 ; "encoderStatus" = "error" ; chapterNumber++ ))  # currently handbrakecli isn't exiting on errors properly 
+   #   encoderStatus="run"                                                      #
+   #   for (( chapterNumber=1 ; "encoderStatus" = "error" ; chapterNumber++ ))  # currently handbrakecli isn't exiting on errors properly 
    for (( count=1; count<50; count++ ))
    do
       otherSettings="--markers --chapters $count $chapterOption"
@@ -91,60 +91,38 @@ isoTranscode ()
    done
 }
 
-case "$1" in
-
--h|--help)
-
-   echo
-   echo "Usage: auto-handbrakecli-script.sh [OPTION]"
-   echo
-   echo "-h, --help                     Prints this help information."
-   echo
-   echo "-c, --chapter [FILE] [TITLE]   Transcodes each chapter of the loggest"
-   echo "                               title of the iso files in that directory."
-   echo "                               File name is optional and title number of"
-   echo "                               the file is optional."
-   echo
-   echo "-t, --title [FILE]             Transcodes each title of the iso files in that"
-   echo "                               directory."
-   echo "                               File name is optional."
-   echo
-   echo "-d, --directory                Transcodes files one directory deep."
-   echo
-   echo "With no option all video files in the directory will be encoded. Loggest title"
-   echo "of an iso file."
-   echo "If a file name is given, only that file will be encoded"
-   ;;
-
--c|--chapter)
+chapterMode ()
+{
    encodeType="chapter"
    fileType=( iso )
    chapterOption="--longest"
-   if [ -n "$2" ]
+   if [ -n "$fileName" ]
    then
-      inputFileName="$2"
-      [ -n "$3" ] && chapterOption="--title $3"
+      inputFileName="$fileName"
+      [ -n "$titleNumber" ] && chapterOption="--title $titleNumber"
       isoTranscode
    else
       encodeCommand="isoTranscode"
       fileSearch
    fi
-   ;;
+}
 
--t|--title)
+titleMode ()
+{
    encodeType="title"
    fileType=( iso )
-   if [ -n "$2" ]
+   if [ -n "$fileName" ]
    then
-      inputFileName="$2"
+      inputFileName="$fileName"
       isoTranscode
    else
       encodeCommand="isoTranscode"
       fileSearch
    fi
-   ;;
+}
 
--d|--directory)
+directoryMode ()
+{
    startingDiretory=`pwd`
    [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
    encodeCommand="fileTranscode"
@@ -160,21 +138,111 @@ case "$1" in
       fi
    done
    cd $startingDiretory 
-   ;;
+}
 
-*)
+simpleDirectoryMode ()
+{
    [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
-   if [ -n "$1" ]
-   then
-      inputFileName="$1"
-      videoName=${inputFileName%.*}
-      fileTranscode
-   else
-      encodeCommand="fileTranscode"
-      fileSearch
-   fi
-   ;;
+   encodeCommand="fileTranscode"
+   fileSearch
+}
 
-esac
+fileMode ()
+{
+   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+      inputFileName="$fileName"
+      videoName="${inputFileName%.*}"
+      fileTranscode
+}
+
+printUsage ()
+{
+echo
+echo "Usage: auto-handbrakecli-script.sh [OPTION]"
+echo
+echo "-h, --help"
+echo "   Prints this help information."
+echo
+echo "-c, --chapter [FILE] [TITLE]"
+echo "   Transcodes each chapter of the loggest title or title number given of"
+echo "   the iso files in that directory."
+echo "   File name is optional and title number of the file is optional."
+echo
+echo "-t, --title [FILE]"
+echo "   Transcodes each title of the iso files in that directory."
+echo "   File name is optional."
+echo
+echo "-d, --directory"
+echo "   Transcodes files one directory deep."
+echo
+echo "-- [FILE]"
+echo "   If a file name is given, only that file will be encoded"
+echo
+echo "With no option all video files in the directory will be encoded and"
+echo "loggest title of an iso file."
+echo
+}
+
+if [ -z "$1" ]
+   then
+      simpleDirectoryMode
+   else
+      until [ -z "$1" ]; do
+      	# use a case statement to test vars. we always test
+      	# test $1 and shift at the end of the for block.
+      	case $1 in
+      	   -h|--help)
+               printUsage
+               exit 0
+            ;;
+      		-c|--chapter )
+      		   # shift, so the string after --home becomes
+   	    		# our new $1. then save the value.
+      		   shift
+      		   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
+      		   shift
+      		   [ -n "$1" -a "$1" != "-*" ] && titleNumber="$1"
+      		   mode="chapterMode"
+            ;;
+      		-t|--title )
+      		   shift
+      		   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
+      		   shift
+      		   mode="titleMode"
+      		;;
+      		-d|--directory )
+      		   mode="directoryMode"
+   		   ;;
+      		-- )
+      			# set all the following arguments as files
+      			shift
+      		   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
+      		   mode="fileMode"
+      		   #filelist=
+               #filelist="$filelist $@"
+      		;;
+      		-* )
+      			echo "Unrecognized option: $1"
+      			exit 1
+      		;;
+      		--* )
+      			echo "Unrecognized option: $1"
+      			exit 1
+      		;;
+      		* )
+      		   printUsage
+               exit 0
+      		;;
+      	esac
+
+      	shift
+
+      	if [ "$#" = "0" ]; then
+      		break
+      	fi
+      done
+fi
+
+$mode
 
 exit 0
