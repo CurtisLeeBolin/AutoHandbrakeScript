@@ -155,33 +155,42 @@ fileMode ()
       fileTranscode
 }
 
+errorFound ()
+{
+   echo "Error with options."
+   printUsage
+   exit 1
+}
+
 printUsage ()
 {
-echo
-echo "Usage: auto-handbrakecli-script.sh [OPTION]"
-echo
-echo "-h, --help"
-echo "   Prints this help information."
-echo
-echo "-c, --chapter [FILE] [TITLE]"
-echo "   Transcodes each chapter of the loggest title or title number given of"
-echo "   the iso files in that directory."
-echo "   File name is optional and title number of the file is optional."
-echo
-echo "-t, --title [FILE]"
-echo "   Transcodes each title of the iso files in that directory."
-echo "   File name is optional."
-echo
-echo "-d, --directory"
-echo "   Transcodes files one directory deep."
-echo
-echo "-- [FILE]"
-echo "   If a file name is given, only that file will be encoded"
-echo
-echo "With no option all video files in the directory will be encoded and"
-echo "loggest title of an iso file."
-echo
+   echo
+   echo "Usage: auto-handbrakecli-script.sh [OPTION]"
+   echo
+   echo "-h, --help"
+   echo "   Prints this help information."
+   echo
+   echo "-c, --chapter [FILE] [TITLE]"
+   echo "   Transcodes each chapter of the loggest title or title number given of"
+   echo "   the iso files in that directory."
+   echo "   File name is optional and title number of the file is optional."
+   echo
+   echo "-t, --title [FILE]"
+   echo "   Transcodes each title of the iso files in that directory."
+   echo "   File name is optional."
+   echo
+   echo "-d, --directory"
+   echo "   Transcodes files one directory deep."
+   echo
+   echo "-- [FILE]"
+   echo "   If a file name is given, only that file will be encoded"
+   echo
+   echo "With no option all video files in the directory will be encoded and"
+   echo "loggest title of an iso file."
+   echo
 }
+
+mode=""
 
 if [ -z "$1" ]
    then
@@ -198,6 +207,7 @@ if [ -z "$1" ]
       		-c|--chapter )
       		   # shift, so the string after --home becomes
    	    		# our new $1. then save the value.
+   	    		[ -n "$mode" ] && errorFound
       		   shift
       		   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
       		   shift
@@ -205,15 +215,18 @@ if [ -z "$1" ]
       		   mode="chapterMode"
             ;;
       		-t|--title )
+      		   [ -n "$mode" ] && errorFound
       		   shift
       		   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
       		   shift
       		   mode="titleMode"
       		;;
       		-d|--directory )
+      		   [ -n "$mode" ] && errorFound
       		   mode="directoryMode"
    		   ;;
       		-- )
+      		   [ -n "$mode" ] && errorFound
       			# set all the following arguments as files
       			shift
       		   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
@@ -223,11 +236,11 @@ if [ -z "$1" ]
       		;;
       		-* )
       			echo "Unrecognized option: $1"
-      			exit 1
+      			[ -n "$mode" ] && errorFound
       		;;
       		--* )
       			echo "Unrecognized option: $1"
-      			exit 1
+      			[ -n "$mode" ] && errorFound
       		;;
       		* )
       		   printUsage
