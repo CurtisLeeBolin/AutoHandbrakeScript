@@ -27,14 +27,13 @@ readonly DEFAULT_AUDIO_SETTINGS="--audio 1 --aencoder faac --ab 128 --mixdown dp
 readonly DEFAULT_SUBTITLE_SETTINGS="--native-language eng --subtitle-forced scan --subtitle scan"
 readonly DEFAULT_CONTAINER_TYPE="mkv"
 readonly DEFAULT_CONTAINER_SETTINGS="--format $DEFAULT_CONTAINER_TYPE"
-readonly DEFAULT_OUTPUT_DIRECTORY="output"
 readonly DEFAULT_PROCESSED_DIRECTORY="processed"
 readonly DEFAULT_LOG_FILE="handbrake.log"
 otherSettings="--markers"
 
 logger ()
 {
-   echo "$(date +'[ %d %b %Y %H:%M ]') :: $*" | tee -a "$DEFAULT_LOG_FILE"
+   echo "$(date +'[ %d %b %Y %H:%M ]') :: $*" | tee -a "$DEFAULT_PROCESSED_DIRECTORY"/"$DEFAULT_LOG_FILE"
 }
 
 checkForAc3 ()
@@ -47,11 +46,12 @@ checkForAc3 ()
    [ "$inputAudioCodec" =  "ID_AUDIO_CODEC=a52" ] && audioSettings="--audio 1 --aencoder ac3"
 }
 
-encode ()
+fileEncode ()
 {
    checkForAc3
    logger "Encoding $inputFileName to $videoName.$DEFAULT_CONTAINER_TYPE ..."
-   HandBrakeCLI $DEFAULT_VIDEO_SETTINGS $DEFAULT_X264_SETTINGS $audioSettings $DEFAULT_SUBTITLE_SETTINGS $otherSettings $DEFAULT_CONTAINER_SETTINGS --input "$inputFileName" --output "$outputDirectory"/"$videoName"."$DEFAULT_CONTAINER_TYPE" || encoderStatus="error"
+   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
+   HandBrakeCLI $DEFAULT_VIDEO_SETTINGS $DEFAULT_X264_SETTINGS $audioSettings $DEFAULT_SUBTITLE_SETTINGS $otherSettings $DEFAULT_CONTAINER_SETTINGS --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" --output "$videoName"."$DEFAULT_CONTAINER_TYPE" || encoderStatus="error"
    logger "Encoding Completed."
 }
 
@@ -68,22 +68,16 @@ fileSearch ()
             predicate="$predicate -o \"$fileNameExt\" = \"${fileType[i]}\""   #
          done
          videoName=${inputFileName%.*}  # extracts the video name from the file name
+         mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
          [ $predicate ] && $encodeCommand
          fi
    done
 }
 
-fileEncode ()
-{
-   outputDirectory="$DEFAULT_OUTPUT_DIRECTORY"
-   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
-   encode
-   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
-}
-
 isoEncode ()
 {
-   outputDirectory="$DEFAULT_OUTPUT_DIRECTORY/${inputFileName%.*}"
+   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
+   outputDirectory="${inputFileName%.*}/"
    [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
 #   encoderStatus="run"                                                      #
 #   for (( chapterNumber=1 ; "encoderStatus" = "error" ; chapterNumber++ ))  # currently handbrakecli isn't exiting on errors properly 
@@ -93,12 +87,9 @@ isoEncode ()
       [ $encodeType=="title" ] && otherSettings="--markers --title $count"
       videoName="$encodeType$count"
       [ "$count" -lt "10" ] && videoName="${encodeType}0$count"
-      encode
+      fileEncode
    done
-   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
 }
-
-[ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir "$DEFAULT_PROCESSED_DIRECTORY"  #  creates the processed directory if it doesn't exist
 
 case "$1" in
 
@@ -156,7 +147,6 @@ case "$1" in
 -d|--directory)
    startingDiretory=`pwd`
    [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
-   [ ! -d "$DEFAULT_OUTPUT_DIRECTORY" ] && mkdir -p "$DEFAULT_OUTPUT_DIRECTORY"
    encodeCommand="fileEncode"
    fileSearch
    for directoryName in *
@@ -165,26 +155,26 @@ case "$1" in
       then
          cd "$directoryName"
          [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
-         [ ! -d "$DEFAULT_OUTPUT_DIRECTORY" ] && mkdir -p "$DEFAULT_OUTPUT_DIRECTORY"
          fileSearch
          cd ../
       fi
    done
    cd $startingDiretory 
    ;;
-   
 
 *)
+   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
    if [ -n "$1" ]
    then
       inputFileName="$1"
       videoName=${inputFileName%.*}
       fileEncode
    else
-      encodeCommand="fileEncode"
+      encodeCommand="fileEncoexit
       fileSearch
    fi
    ;;
+
 esac
 
 exit 0
