@@ -137,7 +137,7 @@ directoryMode ()
          cd ../
       fi
    done
-   cd $startingDiretory 
+   cd "$startingDiretory" 
 }
 
 simpleDirectoryMode ()
@@ -164,33 +164,35 @@ errorFound ()
 
 printUsage ()
 {
-   echo
-   echo "Usage: auto-handbrakecli-script.sh [OPTION]"
-   echo
-   echo "-h, --help"
-   echo "   Prints this help information."
-   echo
-   echo "-c, --chapter [FILE] [TITLE]"
-   echo "   Transcodes each chapter of the loggest title or title number given of"
-   echo "   the iso files in that directory."
-   echo "   File name is optional and title number of the file is optional."
-   echo
-   echo "-t, --title [FILE]"
-   echo "   Transcodes each title of the iso files in that directory."
-   echo "   File name is optional."
-   echo
-   echo "-d, --directory"
-   echo "   Transcodes files one directory deep."
-   echo
-   echo "-- [FILE]"
-   echo "   If a file name is given, only that file will be encoded"
-   echo
-   echo "-m, --mythtv [4:3 or 16:9]"
-   echo "   Sets extra setting for mythtv recordings.  MUST BE LAST OPTION"
-   echo
-   echo "With no option all video files in the directory will be encoded and"
-   echo "loggest title of an iso file."
-   echo
+cat << EOF
+
+Usage: auto-handbrakecli-script.sh [OPTION]
+
+-h, --help
+   Prints this help information.
+
+-c, --chapter [FILE] [TITLE]
+   Transcodes each chapter of the loggest title or title number given of the iso
+   files in that directory.
+   File name is optional and title number of the file is optional.
+
+-t, --title [FILE]
+   Transcodes each title of the iso files in that directory.
+   File name is optional.
+
+-d, --directory
+   Transcodes files one directory deep.
+
+-- [FILE]
+   If a file name is given, only that file will be encoded
+
+-m, --mythtv [4:3 or 16:9]
+   Sets extra setting for mythtv recordings.  MUST BE LAST OPTION
+
+With no option all video files in the directory will be encoded and loggest
+title of an iso file.
+
+EOF
 }
 
 mode=""
