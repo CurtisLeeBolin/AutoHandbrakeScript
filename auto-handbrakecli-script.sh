@@ -31,12 +31,12 @@ readonly DEFAULT_PROCESSED_DIRECTORY="processed"
 readonly DEFAULT_LOG_FILE="handbrake.log"
 otherSettings="--markers"
 
-logger ()
+Logger ()
 {
-   echo "$(date +'[ %d %b %Y %H:%M ]') :: $*" | tee -a "$DEFAULT_PROCESSED_DIRECTORY"/"$DEFAULT_LOG_FILE"
+   echo "$(date +'[ %d %b %Y %H:%M:%S ]') :: $*" | tee -a "$DEFAULT_PROCESSED_DIRECTORY"/"$DEFAULT_LOG_FILE"
 }
 
-checkForAc3 ()
+CheckForAc3 ()
 {
    # Checks for ac3 audio
    inputAudioCodec=`mplayer -vo null -ao null -frames 0 -identify 2>&1 /dev/null "$inputFileName" | grep "^ID_AUDIO_CODEC=a52"`
@@ -46,16 +46,16 @@ checkForAc3 ()
    [ "$inputAudioCodec" =  "ID_AUDIO_CODEC=a52" ] && audioSettings="--audio 1 --aencoder ac3"
 }
 
-fileTranscode ()
+FileTranscode ()
 {
-   checkForAc3
-   logger "Encoding $inputFileName to $videoName.$DEFAULT_CONTAINER_TYPE ..."
+   CheckForAc3
+   Logger "Encoding $inputFileName to $videoName.$DEFAULT_CONTAINER_TYPE ..."
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
    HandBrakeCLI $DEFAULT_VIDEO_SETTINGS $DEFAULT_X264_SETTINGS $audioSettings $DEFAULT_SUBTITLE_SETTINGS $otherSettings $DEFAULT_CONTAINER_SETTINGS --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" --output "$videoName"."$DEFAULT_CONTAINER_TYPE" || encoderStatus="error"
-   logger "Encoding Completed."
+   Logger "Encoding Completed."
 }
 
-fileSearch ()
+FileSearch ()
 {
    for inputFileName in *  # stores each file in the directory into inputFileName 1 at a time, then does the loop
    do
@@ -74,7 +74,7 @@ fileSearch ()
    done
 }
 
-isoTranscode ()
+IsoTranscode ()
 {
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
    outputDirectory="${inputFileName%.*}/"
@@ -87,11 +87,11 @@ isoTranscode ()
       [ $encodeType=="title" ] && otherSettings="--markers --title $count"
       videoName="$encodeType$count"
       [ "$count" -lt "10" ] && videoName="${encodeType}0$count"
-      fileTranscode
+      FileTranscode
    done
 }
 
-chapterMode ()
+ChapterMode ()
 {
    encodeType="chapter"
    fileType=( iso )
@@ -100,69 +100,69 @@ chapterMode ()
    then
       inputFileName="$fileName"
       [ -n "$titleNumber" ] && chapterOption="--title $titleNumber"
-      isoTranscode
+      IsoTranscode
    else
-      encodeCommand="isoTranscode"
-      fileSearch
+      encodeCommand="IsoTranscode"
+      FileSearch
    fi
 }
 
-titleMode ()
+TitleMode ()
 {
    encodeType="title"
    fileType=( iso )
    if [ -n "$fileName" ]
    then
       inputFileName="$fileName"
-      isoTranscode
+      IsoTranscode
    else
-      encodeCommand="isoTranscode"
-      fileSearch
+      encodeCommand="IsoTranscode"
+      FileSearch
    fi
 }
 
-directoryMode ()
+DirectoryMode ()
 {
    startingDiretory=`pwd`
    [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
-   encodeCommand="fileTranscode"
-   fileSearch
+   encodeCommand="FileTranscode"
+   FileSearch
    for directoryName in *
    do
       if [ -d "$directoryName" ]  # test if it is a true directory
       then
          cd "$directoryName"
          [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
-         fileSearch
+         FileSearch
          cd ../
       fi
    done
    cd "$startingDiretory" 
 }
 
-simpleDirectoryMode ()
+SimpleDirectoryMode ()
 {
    [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
-   encodeCommand="fileTranscode"
-   fileSearch
+   encodeCommand="FileTranscode"
+   FileSearch
 }
 
-fileMode ()
+FileMode ()
 {
    [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
       inputFileName="$fileName"
       videoName="${inputFileName%.*}"
-      fileTranscode
+      FileTranscode
 }
 
-errorFound ()
+ErrorFound ()
 {
    echo "Error with options."
-   printUsage
+   PrintUsage
    exit 1
 }
 
-printUsage ()
+PrintUsage ()
 {
 cat << EOF
 
@@ -195,53 +195,51 @@ title of an iso file.
 EOF
 }
 
-mode=""
-
 if [ -z "$1" ]
 then
-   simpleDirectoryMode
+   SimpleDirectoryMode
 else
    until [ -z "$1" ]; do
    	# use a case statement to test vars. we always test
    	# test $1 and shift at the end of the for block.
    	case $1 in
    	   -h|--help)
-            printUsage
+            PrintUsage
             exit 0
          ;;
          -c|--chapter )
    		   # shift, so the string after --home becomes
    	   	# our new $1. then save the value.
-   	   	[ -n "$mode" ] && errorFound
+   	   	[ -n "$mode" ] && ErrorFound
       	   shift
       	   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
       	   shift
       	   [ -n "$1" -a "$1" != "-*" ] && titleNumber="$1"
-      	   mode="chapterMode"
+      	   mode="ChapterMode"
          ;;
       	-t|--title )
-      	   [ -n "$mode" ] && errorFound
+      	   [ -n "$mode" ] && ErrorFound
       	   shift
       	   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
       	   shift
-      	   mode="titleMode"
+      	   mode="TitleMode"
       	;;
       	-d|--directory )
-      	   [ -n "$mode" ] && errorFound
-      	   mode="directoryMode"
+      	   [ -n "$mode" ] && ErrorFound
+      	   mode="DirectoryMode"
    		;;
       	-- )
-      	   [ -n "$mode" ] && errorFound
+      	   [ -n "$mode" ] && ErrorFound
       		# set all the following arguments as files
       		shift
       	   [ -n "$1" -a "$1" != "-*" ] && fileName="$1"
-      	   mode="fileMode"
+      	   mode="FileMode"
       	   #filelist=
             #filelist="$filelist $@"
       	;;
       	-m|--mythtv )
       	   shift
-      	   [ ! -n "$1" ] && errorFound
+      	   [ ! -n "$1" ] && ErrorFound
       	   if [ "$1" == "4:3" ]
       	   then
       	      otherSettings="$otherSettings --crop 6:0:0:0 --width 640 --height 480"
@@ -249,19 +247,19 @@ else
       	   then
       	      otherSettings="$otherSettings --crop 66:60:0:0 --width 640 --height 360"
       	   else
-      	      errorFound
+      	      ErrorFound
       	   fi
       	;;
       	-* )
       		echo "Unrecognized option: $1"
-      		[ -n "$mode" ] && errorFound
+      		[ -n "$mode" ] && ErrorFound
       	;;
       	--* )
       		echo "Unrecognized option: $1"
-      		[ -n "$mode" ] && errorFound
+      		[ -n "$mode" ] && ErrorFound
       	;;
       	* )
-      	   printUsage
+      	   PrintUsage
             exit 0
       	;;
       esac
