@@ -193,15 +193,18 @@ cat << EOF
 Modes:
 
    -c, --chapter [TITLE]
-      Transcodes each chapter of the loggest title or title number given of the
-      iso file or files in that directory.
+      Transcodes each chapter of the main feature title or title number given
+      of the iso files in that directory or file given as input.
 
    -t, --title [TITLE]
-      Transcodes each title of the iso file or files in that directory or the
-      title you selected.
-
+      Transcodes each title or title number given
+      of the iso files in that directory or file given as input.
+      
    -d, --directory
       Transcodes files one directory deep.
+
+   With no mode selected all video files in the directory will be transcoded 
+   and main feature title of an iso files unless an input file is given.
 
 Other Options:
    
@@ -214,9 +217,6 @@ Other Options:
 
    -m, --mythtv [4:3 or 16:9]
       Sets extra setting for mythtv recordings.
-
-With no option all video files in the directory will be transcoded and loggest
-title of an iso file.
 
 EOF
 }
