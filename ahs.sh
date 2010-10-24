@@ -19,19 +19,20 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###############################################################################
 
-fileType=( avi flv iso mov mp4 mpeg mpg ogg ogm ogv wmv )
+fileType=( avi flv iso mkv mov mp4 mpeg mpg ogg ogm ogv wmv m2ts rmvb rm 3gp m4a 3g2 mj2 asf divx )
 
-readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --quality 22.5 --detelecine --decomb --loose-anamorphic"
-#readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --two-pass --turbo --vb 768 --decomb --loose-anamorphic"
+readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --quality 22.5 --decomb --loose-anamorphic"
 readonly DEFAULT_X264_SETTINGS="--x264opts b-adapt=2:rc-lookahead=50"
 readonly DEFAULT_AUDIO_SETTINGS="--audio 1 --aencoder faac --ab 128 --mixdown dpl2 --arate 48 --drc 2.5"
-readonly DEFAULT_SUBTITLE_SETTINGS="--native-language eng --subtitle-forced scan --subtitle scan"
+readonly DEFAULT_SUBTITLE_SETTINGS="--native-language eng --subtitle 1,2,3,4,5,6,7,8,9"
 readonly DEFAULT_CHAPTER_SETTINGS="--markers"
 readonly DEFAULT_CONTAINER_TYPE="mkv"
 readonly DEFAULT_CONTAINER_SETTINGS="--format $DEFAULT_CONTAINER_TYPE"
-readonly DEFAULT_PROCESSED_DIRECTORY="processed"
 readonly DEFAULT_LOG_FILE="handbrake.log"
-otherSettings="--markers"
+readonly DEFAULT_PROCESSED_DIRECTORY="processed"
+readonly DEFAULT_OUTPUT_DIRECTORY="output"
+outputDirectory="$DEFAULT_OUTPUT_DIRECTORY"
+otherSettings=""
 mode=""
 titleOptions=""
 fileName=""
@@ -48,8 +49,13 @@ CheckForAc3 ()
    then
       audioSettings="--audio 1 --aencoder ac3"
    else
-      inputAudioCodec=`HandBrakeCLI --scan -i "$inputFileName" 2>&1 | grep "Audio: ac3"`
-      audioSettings="$DEFAULT_AUDIO_SETTINGS"
+      inputAudioCodec=`HandBrakeCLI --scan -i "$inputFileName" 2>&1 | grep "(AC3)"`
+      if [ -z "$inputAudioCodec" ]
+      then
+         audioSettings="$DEFAULT_AUDIO_SETTINGS"
+      else
+         audioSettings="--audio 1 --aencoder ac3"
+      fi
    fi
 }
 
@@ -57,8 +63,11 @@ FileTranscode ()
 {
    CheckForAc3
    Logger "Encoding $inputFileName to $videoName.$DEFAULT_CONTAINER_TYPE ..."
+   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
-   HandBrakeCLI $DEFAULT_VIDEO_SETTINGS $DEFAULT_X264_SETTINGS $audioSettings $DEFAULT_SUBTITLE_SETTINGS $DEFAULT_CONTAINER_SETTINGS $DEFAULT_CHAPTER_SETTINGS $otherSettings --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" --output "$outputDirectory""$videoName"."$DEFAULT_CONTAINER_TYPE" || encoderStatus="error"
+   pwd
+   HandBrakeCLI $DEFAULT_VIDEO_SETTINGS $DEFAULT_X264_SETTINGS $audioSettings $DEFAULT_SUBTITLE_SETTINGS $DEFAULT_CONTAINER_SETTINGS $DEFAULT_CHAPTER_SETTINGS $otherSettings --input "$(pwd)"/"$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" --output "$(pwd)"/"$outputDirectory"/"$videoName"."$DEFAULT_CONTAINER_TYPE"
    Logger "Encoding Completed."
 }
 
@@ -70,12 +79,11 @@ FileSearch ()
       then
          fileNameExt="${inputFileName##*.}"  # extracts the extension name from the file name
          predicate="\"$fileType\" = \"$fileNameExt\""                         #
-         for (( i=1; i<${#fileType[@]}; i++ ))                                # creates and list of or's and stores it in predicate 
+         for (( i=1; i<${#fileType[@]}; i++ ))                                # creates and list of or's and stores it in predicate
          do                                                                   #
             predicate="$predicate -o \"$fileNameExt\" = \"${fileType[i]}\""   #
-         done
+         done                                                                 #
          videoName=${inputFileName%.*}  # extracts the video name from the file name
-         mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
          [ $predicate ] && $encodeCommand
          fi
    done
@@ -84,10 +92,7 @@ FileSearch ()
 IsoTranscode ()
 {
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
-   outputDirectory="${inputFileName%.*}/"
-   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"  #  creates the output directory if it doesn't exist
-   #   encoderStatus="run"                                                      #
-   #   for (( count=1 ; "$encoderStatus" == "error" ; count++ ))  # currently handbrakecli isn't exiting on errors properly 
+   outputDirectory="${inputFileName%.*}"
    for (( count=1; count<50; count++ ))
    do
       [ "$count" -lt "10" ] && number=0$count || number=$count
@@ -142,7 +147,7 @@ DirectoryMode ()
    FileSearch
    for directoryName in *
    do
-      if [ -d "$directoryName" && "$directoryName" != "$DEFAULT_PROCESSED_DIRECTORY" ]  # test if it is a true directory
+      if [[ -d "$directoryName" && "$directoryName" != "$DEFAULT_PROCESSED_DIRECTORY" && "$directoryName" != "$DEFAULT_OUTPUT_DIRECTORY" ]]
       then
          cd "$directoryName"
          [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
@@ -150,12 +155,11 @@ DirectoryMode ()
          cd ../
       fi
    done
-   cd "$startingDiretory" 
+   cd "$startingDiretory"
 }
 
 SimpleDirectoryMode ()
 {
-   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
    encodeCommand="FileTranscode"
    FileSearch
 }
@@ -163,9 +167,9 @@ SimpleDirectoryMode ()
 FileMode ()
 {
    [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
-      inputFileName="$fileName"
-      videoName="${inputFileName%.*}"
-      FileTranscode
+   inputFileName="$fileName"
+   videoName="${inputFileName%.*}"
+   FileTranscode
 }
 
 ErrorFound ()
@@ -187,36 +191,33 @@ echo
 echo "Usage: $0 [OPTION]"
 cat << EOF
 
--h, --help
-   Prints this help information.
-
 Modes:
 
-   -c, --chapter [TITLE]
+   -C, --chapter [TITLE]
       Transcodes each chapter of the main feature title or title number given
       of the iso files in that directory or file given as input.
 
-   -t, --title [TITLE]
+   -T, --title [TITLE]
       Transcodes each title or title number given
       of the iso files in that directory or file given as input.
-      
-   -d, --directory
+
+   -D, --directory
       Transcodes files one directory deep.
 
-   With no mode selected all video files in the directory will be transcoded 
+   With no mode selected all video files in the directory will be transcoded
    and main feature title of an iso files unless an input file is given.
 
 Other Options:
-   
+
    -i, --input [FILE]
       If a file name is given, only that file will be encoded
 
-   -C, --crop <T:B:L:R>
+   -c, --crop <T:B:L:R>
       Manually sets the cropping
-      Top:Bottom:Left:Right 
+      Top:Bottom:Left:Right
 
-   -m, --mythtv [4:3 or 16:9]
-      Sets extra setting for mythtv recordings.
+   -h, --help
+      Prints this help information.
 
 EOF
 }
@@ -233,24 +234,24 @@ else
             PrintUsage
             exit 0
          ;;
-         -c|--chapter )
+         -C|--chapter )
    		   # shift, so the string after -c or --chapter becomes our new $1
    	   	[ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
-      	   shift
+      	 	shift
       	   [ -n "$1" -a "$1" != "-*" ] && titleOptions="--title $1"
       	   mode="ChapterMode"
          ;;
-      	-t|--title )
+      	-T|--title )
       	   [ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
       	   [ -n "$2" -a "${2:0:1}" != "-" ] && shift && titleOptions="--title $1"
       	   mode="TitleMode"
       	;;
-      	-d|--directory )
+      	-D|--directory )
       	   [ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
       	   [ -n "$2" -a "$2" = "-i" ] && error="Can't use input file with directory mode" && ErrorFound
       	   mode="DirectoryMode"
    		;;
-         -C|--crop )
+         -c|--crop )
             [ $cropFlag ] && error="Only one crop can be set." && ErrorFound
             cropFlag=true
             shift
@@ -258,25 +259,11 @@ else
          ;;
       	-i|--input )
       	   shift
-      	   if [ -n "$1" -a "${1:0:1}" != "-" ] # "${1:0:1}" means get the first charater of string $1
+      	   if [ -n "$1" -a "${1:0:1}" != "-" ] # "${1:0:1}" gets the first charater of string $1
       	   then
       	      fileName="$1"
       	   else
       	      error="$1 is not a valid input file."
-      	      ErrorFound
-      	   fi
-      	;;
-      	-m|--mythtv )
-      	   shift
-      	   [ -z "$1" ] && error="Options required for mythtv mode." && ErrorFound
-      	   if [ "$1" == "4:3" ]
-      	   then
-      	      otherSettings="$otherSettings --crop 6:0:0:0 --width 640 --height 480"
-      	   elif [ "$1" == "16:9" ]
-      	   then
-      	      otherSettings="$otherSettings --crop 66:60:0:0 --width 640 --height 360"
-      	   else
-      	      error="$1 is not a valid option for mythtv mode."
       	      ErrorFound
       	   fi
       	;;
@@ -293,7 +280,7 @@ else
    done
 fi
 
-[ -z "$mode" ] && mode="FileMode"
+[ -z "$mode" ] && mode="SimpleDirectoryMode"
 $mode
 
 exit 0
