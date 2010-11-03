@@ -41,6 +41,7 @@ titleCount=""
 fileName=""
 scanList=""
 cropFlag=false
+audioCopy=false
 
 Logger ()
 {
@@ -49,32 +50,60 @@ Logger ()
 
 CheckForAc3 ()
 {
-   audioChannelList=${scanList#*+\ audio\ tracks:}
+   [ "${inputFileName##*.}" != "iso" ] && titleOptions=""
+   audioChannelList=`HandBrakeCLI --scan $titleOptions --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" 2>&1`
+   audioChannelList=${audioChannelList#*+\ audio\ tracks:}
    audioChannelList=${audioChannelList%+\ subtitle\ tracks:*}
-   audioChannelCount=`echo $audioChannelList | sed -e 's/+/\n/g' | wc -l`
-   ((audioChannelCount--))
-   if [ "${inputFileName##*.}" == "iso" ]
-   then
-      audioNumbers="1"
-      encoderCopy="copy"
-      if [ "$audioChannelCount" != "1" ]
+   audioChannelList=${audioChannelList// /} # replace " " with ""
+   audioCount="1"
+   for item in $(echo $audioChannelList | sed -e 's/+/\n/g')
+   do
+      echo $item
+      if $(echo $item | grep "AC3" | grep "5.1" | grep -q "384000bps") || $audioCopy
       then
-         for (( i=2; i<="$audioChannelCount"; i++ ))
-         do
-            audioNumbers="$audioNumbers,$i"
-            encoderCopy="$encoderCopy,copy"
-         done
-      fi
-      audioSettings="--audio $audioNumbers --aencoder $encoderCopy"
-   else
-      inputAudioCodec=`HandBrakeCLI --scan --input "$inputFileName" 2>&1 | grep ": Audio: "`
-      if [ -z "$inputAudioCodec" ]
+         if [ "$audioCount" == "1" ]
+         then
+            audioTracks="$audioCount"
+            audioEncoder="copy"
+            audioBitrate="384"
+            drc="2.5"
+         else
+            audioTracks="$audioTracks,$audioCount"
+            audioEncoder="$audioEncoder,copy"
+            audioBitrate="$audioBitrate,384"
+            drc="$drc,2.5"
+         fi
+      elif $(echo $item | grep -q -e "5.1")
       then
-         audioSettings="$DEFAULT_AUDIO_SETTINGS"
+         if [ "$audioCount" == "1" ]
+         then
+            audioTracks="$audioCount"
+            audioEncoder="ac3"
+            audioBitrate="384"
+            drc="2.5"
+         else
+            audioTracks="$audioTracks,$audioCount"
+            audioEncoder="$audioEncoder,ac3"
+            audioBitrate="$audioBitrate,384"
+            drc="$drc,2.5"
+         fi
       else
-         audioSettings="--audio 1 --aencoder ac3"
+         if [ "$audioCount" == "1" ]
+         then
+            audioTracks="$audioCount"
+            audioEncoder="aac"
+            audioBitrate="128"
+            drc="2.5"
+         else
+            audioTracks="$audioTracks,$audioCount"
+            audioEncoder="$audioEncoder,aac"
+            audioBitrate="$audioBitrate,128"
+            drc="$drc,2.5"
+         fi
       fi
-   fi
+      ((audioCount++))
+   done
+   audioSettings="--audio $audioTracks --aencoder $audioEncoder --ab $audioBitrate --drc $drc"
 }
 
 CheckForSubtitles ()
@@ -245,9 +274,10 @@ Modes:
       Transcodes each chapter of the main feature title or title number given
       of the iso files in that directory or file given as input.
 
-   -T, --title [TITLE]
+   -T, --title [TITLE] copy
       Transcodes each title or title number given
       of the iso files in that directory or file given as input.
+      If copy is set then audio tracks are copied instead of trancoded.
 
    -D, --directory
       Transcodes files one directory deep.
@@ -291,7 +321,8 @@ else
          ;;
       	-T|--title )
       	   [ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
-      	   [ -n "$2" -a "${2:0:1}" != "-" ] && shift && titleOptions="--title $1"
+      	   [ -n "$2" -a "${2:0:1}" != "-" -a "$2" != "copy" ] && shift && titleOptions="--title $1"
+            [ -n "$2" -a "copy" ] && shift && audioCopy=true
       	   mode="TitleMode"
       	;;
       	-D|--directory )
