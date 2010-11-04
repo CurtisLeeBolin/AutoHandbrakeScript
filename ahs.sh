@@ -91,12 +91,12 @@ CheckForAc3 ()
          if [ "$audioCount" == "1" ]
          then
             audioTracks="$audioCount"
-            audioEncoder="aac"
+            audioEncoder="faac"
             audioBitrate="128"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
-            audioEncoder="$audioEncoder,aac"
+            audioEncoder="$audioEncoder,faac"
             audioBitrate="$audioBitrate,128"
             drc="$drc,2.5"
          fi
