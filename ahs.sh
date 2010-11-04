@@ -130,15 +130,14 @@ CheckForSubtitles ()
 
 FileTranscode ()
 {
+   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"
    [ "${inputFileName##*.}" != "iso" ] && titleOptions=""
+   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
    scanList=`HandBrakeCLI --scan $titleOptions --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" 2>&1`
    CheckForAc3
    CheckForSubtitles
    Logger "Encoding $inputFileName to $videoName.$DEFAULT_CONTAINER_TYPE ..."
-   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
-   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"
-   mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
-   pwd
    HandBrakeCLI $DEFAULT_VIDEO_SETTINGS $DEFAULT_X264_SETTINGS $audioSettings $subtitleSettings $DEFAULT_CONTAINER_SETTINGS $DEFAULT_CHAPTER_SETTINGS $otherSettings --input "$(pwd)"/"$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" --output "$(pwd)"/"$outputDirectory"/"$videoName"."$DEFAULT_CONTAINER_TYPE"
    Logger "Encoding Completed."
 }
