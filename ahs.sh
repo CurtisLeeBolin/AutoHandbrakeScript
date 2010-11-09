@@ -30,6 +30,7 @@ readonly DEFAULT_CONTAINER_SETTINGS="--format $DEFAULT_CONTAINER_TYPE"
 readonly DEFAULT_LOG_FILE="handbrake.log"
 readonly DEFAULT_PROCESSED_DIRECTORY="processed"
 readonly DEFAULT_OUTPUT_DIRECTORY="output"
+readonly DEFAULT_SKIP_DIRECTORY="skip"
 subtitleSettings=""
 outputDirectory="$DEFAULT_OUTPUT_DIRECTORY"
 otherSettings=""
@@ -223,7 +224,7 @@ DirectoryMode ()
    FileSearch
    for directoryName in *
    do
-      if [[ -d "$directoryName" && "$directoryName" != "$DEFAULT_PROCESSED_DIRECTORY" && "$directoryName" != "$DEFAULT_OUTPUT_DIRECTORY" ]]
+      if [[ -d "$directoryName" && "$directoryName" != "$DEFAULT_PROCESSED_DIRECTORY" && "$directoryName" != "$DEFAULT_OUTPUT_DIRECTORY" && "$directoryName" != "$DEFAULT_SKIP_DIRECTORY" ]]
       then
          cd "$directoryName"
          [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
