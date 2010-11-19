@@ -19,7 +19,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###############################################################################
 
-fileType=( avi flv iso mkv mov mp4 mpeg mpg ogg ogm ogv wmv m2ts rmvb rm 3gp m4a 3g2 mj2 asf divx )
+fileType=( avi flv iso mov mp4 mpeg mpg ogg ogm ogv wmv m2ts rmvb rm 3gp m4a 3g2 mj2 asf divx vob mkv )
 
 readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --quality 22.5 --decomb --loose-anamorphic"
 readonly DEFAULT_X264_SETTINGS="--x264opts b-adapt=2:rc-lookahead=50"
@@ -181,7 +181,7 @@ IsoTranscode ()
 
 ChapterMode ()
 {
-   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+##   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
    fileType=( iso )
    [ -z titleOptions ] && titleOptions="--main-feature"
    if [ -n "$fileName" ]
@@ -196,7 +196,7 @@ ChapterMode ()
 
 TitleMode ()
 {
-   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+##   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
    fileType=( iso )
    if [ -n "$fileName" ]
    then
@@ -219,7 +219,7 @@ TitleMode ()
 DirectoryMode ()
 {
    startingDiretory=`pwd`
-   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+##   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
    encodeCommand="FileTranscode"
    FileSearch
    for directoryName in *
@@ -227,8 +227,19 @@ DirectoryMode ()
       if [[ -d "$directoryName" && "$directoryName" != "$DEFAULT_PROCESSED_DIRECTORY" && "$directoryName" != "$DEFAULT_OUTPUT_DIRECTORY" && "$directoryName" != "$DEFAULT_SKIP_DIRECTORY" ]]
       then
          cd "$directoryName"
-         [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+##         [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
          FileSearch
+         #######################################################################
+         for directoryName in *
+         do
+            if [[ -d "$directoryName" && "$directoryName" != "$DEFAULT_PROCESSED_DIRECTORY" && "$directoryName" != "$DEFAULT_OUTPUT_DIRECTORY" && "$directoryName" != "$DEFAULT_SKIP_DIRECTORY" ]]
+            then
+               cd "$directoryName"
+               FileSearch
+               cd ../
+            fi
+         done
+         #######################################################################
          cd ../
       fi
    done
@@ -280,7 +291,7 @@ Modes:
       If copy is set then audio tracks are copied instead of trancoded.
 
    -D, --directory
-      Transcodes files one directory deep.
+      Transcodes files two directories deep.
 
    With no mode selected all video files in the directory will be transcoded
    and main feature title of an iso files unless an input file is given.
