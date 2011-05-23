@@ -3,7 +3,7 @@
 
 ###############################################################################
 #   Auto HandbrakeCLI Script
-#   Copyright (C) 2009-2010  Curtis Lee Bolin <curtlee2002(at)gmail.com>
+#   Copyright (C) 2009-2011  Curtis Lee Bolin <curtlee2002(at)gmail.com>
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 fileType=( avi flv iso mov mp4 mpeg mpg ogg ogm ogv wmv m2ts rmvb rm 3gp m4a 3g2 mj2 asf divx vob mkv )
 
 readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --quality 22.5 --decomb --loose-anamorphic"
-readonly DEFAULT_X264_SETTINGS="--x264opts b-adapt=2:rc-lookahead=50"
+readonly DEFAULT_X264_SETTINGS="--encopts b-adapt=2:rc-lookahead=50"
 readonly DEFAULT_AUDIO_SETTINGS="--audio 1 --aencoder faac --ab 128 --mixdown dpl2 --arate 48 --drc 2.5"
 readonly DEFAULT_CHAPTER_SETTINGS="--markers"
 readonly DEFAULT_CONTAINER_TYPE="mkv"
