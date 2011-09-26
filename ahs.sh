@@ -1,8 +1,8 @@
-#! /bin/bash
+#!/bin/bash
 #ahs.sh
 
 ###############################################################################
-#   Auto HandbrakeCLI Script
+#   AutoHandbrakeScript
 #   Copyright (C) 2009-2011  Curtis Lee Bolin <curtlee2002(at)gmail.com>
 #
 #   This program is free software: you can redistribute it and/or modify
@@ -21,9 +21,18 @@
 
 fileType=( avi flv iso mov mp4 mpeg mpg ogg ogm ogv wmv m2ts rmvb rm 3gp m4a 3g2 mj2 asf divx vob mkv )
 
-readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --quality 22.5 --decomb --loose-anamorphic"
-readonly DEFAULT_X264_SETTINGS="--encopts b-adapt=2:rc-lookahead=50"
-readonly DEFAULT_AUDIO_SETTINGS="--audio 1 --aencoder faac --ab 128 --mixdown dpl2 --arate 48 --drc 2.5"
+readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --two-pass --turbo --decomb --loose-anamorphic"
+
+#--preset slow
+#readonly DEFAULT_X264_SETTINGS="--encopts b-adapt=2:direct=auto:me=umh:rc-lookahead=50:ref=5:subme=8"
+
+#--preset slower
+#readonly DEFAULT_X264_SETTINGS="--encopts b-adapt=2:direct=auto:me=umh:partitions=all:rc-lookahead=60:ref=8:subme=9:trellis=2"
+
+#--preset veryslow
+readonly DEFAULT_X264_SETTINGS="--encopts b-adapt=2:bframes=8:direct=auto:me=umh:merange=24:partitions=all:ref=16:subme=10:trellis=2:rc-lookahead=60"
+
+readonly DEFAULT_AUDIO_SETTINGS="--audio 1 --aencoder vorbis --ab 64 --mixdown dpl2 --arate 48 --drc 2.5"
 readonly DEFAULT_CHAPTER_SETTINGS="--markers"
 readonly DEFAULT_CONTAINER_TYPE="mkv"
 readonly DEFAULT_CONTAINER_SETTINGS="--format $DEFAULT_CONTAINER_TYPE"
@@ -49,11 +58,19 @@ Logger ()
    echo "$(date +'[ %d %b %Y %H:%M:%S ]') :: $*" | tee -a "$DEFAULT_PROCESSED_DIRECTORY"/"$DEFAULT_LOG_FILE"
 }
 
-CheckForAc3 ()
+CheckVideo ()
 {
-   [ "${inputFileName##*.}" != "iso" ] && titleOptions=""
-   audioChannelList=`HandBrakeCLI --scan $titleOptions --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" 2>&1`
-   audioChannelList=${audioChannelList#*+\ audio\ tracks:}
+   videoWidth=${scanList#*job->width:}
+   videoWidth=${videoWidth%,\ job->*}
+   videoHeight=${scanList#*,\ job->height:}
+   videoHeight=${videoHeight%[*}
+   videoHeight=${videoHeight%S*}
+   videoBitRate="$(echo sqrt\($videoWidth*$videoHeight\) | bc)"
+}
+
+CheckAudio ()
+{
+   audioChannelList=${scanList#*+\ audio\ tracks:}
    audioChannelList=${audioChannelList%+\ subtitle\ tracks:*}
    audioChannelList=${audioChannelList// /} # replace " " with ""
    audioCount="1"
@@ -92,13 +109,13 @@ CheckForAc3 ()
          if [ "$audioCount" == "1" ]
          then
             audioTracks="$audioCount"
-            audioEncoder="faac"
-            audioBitrate="128"
+            audioEncoder="vorbis"
+            audioBitrate="64"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
-            audioEncoder="$audioEncoder,faac"
-            audioBitrate="$audioBitrate,128"
+            audioEncoder="$audioEncoder,vorbis"
+            audioBitrate="$audioBitrate,64"
             drc="$drc,2.5"
          fi
       fi
@@ -107,11 +124,11 @@ CheckForAc3 ()
    audioSettings="--audio $audioTracks --aencoder $audioEncoder --ab $audioBitrate --drc $drc"
 }
 
-CheckForSubtitles ()
+CheckSubtitles ()
 {
    subtitleChannelList=${scanList#*+\ subtitle\ tracks:}
    subtitleChannelList=${subtitleChannelList%HandBrake\ has\ exited.*}
-   subtitleChannelCount=`echo $subtitleChannelList | sed -e 's/+/\n/g' | wc -l`
+   subtitleChannelCount=$(echo $subtitleChannelList | sed -e 's/+/\n/g' | wc -l)
    if [ "$subtitleChannelCount" == "0" ]
    then
       subtitleSettings=""
@@ -135,11 +152,12 @@ FileTranscode ()
    [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"
    [ "${inputFileName##*.}" != "iso" ] && titleOptions=""
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
-   scanList=`HandBrakeCLI --scan $titleOptions --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" 2>&1`
-   CheckForAc3
-   CheckForSubtitles
+   scanList=$(HandBrakeCLI --scan $titleOptions --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" 2>&1)
+   CheckVideo
+   CheckAudio
+   CheckSubtitles
    Logger "Encoding $inputFileName to $videoName.$DEFAULT_CONTAINER_TYPE ..."
-   HandBrakeCLI $DEFAULT_VIDEO_SETTINGS $DEFAULT_X264_SETTINGS $audioSettings $subtitleSettings $DEFAULT_CONTAINER_SETTINGS $DEFAULT_CHAPTER_SETTINGS $otherSettings --input "$(pwd)"/"$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" --output "$(pwd)"/"$outputDirectory"/"$videoName"."$DEFAULT_CONTAINER_TYPE"
+   HandBrakeCLI $DEFAULT_VIDEO_SETTINGS $DEFAULT_X264_SETTINGS --vb $videoBitRate $audioSettings $subtitleSettings $DEFAULT_CONTAINER_SETTINGS $DEFAULT_CHAPTER_SETTINGS $otherSettings --input "$(pwd)"/"$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" --output "$(pwd)"/"$outputDirectory"/"$videoName"."$DEFAULT_CONTAINER_TYPE"
    Logger "Encoding Completed."
 }
 
@@ -149,7 +167,7 @@ FileSearch ()
    do
       if [ -f "$inputFileName" ]  # test if it is a true file
       then
-         fileNameExt="${inputFileName##*.}"  # extracts the extension name from the file name
+         fileNameExt="${inputFileName##*.}"  # extracts the extension from the file name
          for (( i=0 ; i!=${#fileType[@]} ; i++))
          do
             if [ "${fileType[$i]}" == "$fileNameExt" ]
@@ -167,7 +185,7 @@ IsoTranscode ()
 {
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
    outputDirectory="${inputFileName%.*}"
-   titleCount=`HandBrakeCLI --scan --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" 2>&1 | grep "scan: DVD has"`
+   titleCount=$(HandBrakeCLI --scan --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" 2>&1 | grep "scan: DVD has")
    titleCount="${titleCount:25}"
    titleCount="${titleCount%\ title(s)}"
    for (( count=1; count<="$titleCount"; count++ ))
@@ -181,7 +199,6 @@ IsoTranscode ()
 
 ChapterMode ()
 {
-##   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
    fileType=( iso )
    [ -z titleOptions ] && titleOptions="--main-feature"
    if [ -n "$fileName" ]
@@ -196,7 +213,6 @@ ChapterMode ()
 
 TitleMode ()
 {
-##   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
    fileType=( iso )
    if [ -n "$fileName" ]
    then
@@ -218,8 +234,7 @@ TitleMode ()
 
 DirectoryMode ()
 {
-   startingDiretory=`pwd`
-##   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+   startingDiretory=$(pwd)
    encodeCommand="FileTranscode"
    FileSearch
    for directoryName in *
@@ -227,7 +242,6 @@ DirectoryMode ()
       if [[ -d "$directoryName" && "$directoryName" != "$DEFAULT_PROCESSED_DIRECTORY" && "$directoryName" != "$DEFAULT_OUTPUT_DIRECTORY" && "$directoryName" != "$DEFAULT_SKIP_DIRECTORY" ]]
       then
          cd "$directoryName"
-##         [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
          FileSearch
          #######################################################################
          for directoryName in *
@@ -316,57 +330,57 @@ then
    SimpleDirectoryMode
 else
    until [ -z "$1" ]; do
-   	# use a case statement to test vars. we always test
-   	# test $1 and shift at the end of the for block.
-   	case $1 in
-   	   -h|--help)
+      # use a case statement to test vars. we always test
+      # test $1 and shift at the end of the for block.
+      case $1 in
+         -h|--help)
             PrintUsage
             exit 0
          ;;
          -C|--chapter )
-   		   # shift, so the string after -c or --chapter becomes our new $1
-   	   	[ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
-      	 	shift
-      	   [ -n "$1" -a "$1" != "-*" ] && titleOptions="--title $1"
-      	   mode="ChapterMode"
+            # shift, so the string after -c or --chapter becomes our new $1
+            [ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
+            shift
+            [ -n "$1" -a "$1" != "-*" ] && titleOptions="--title $1"
+            mode="ChapterMode"
          ;;
-      	-T|--title )
-      	   [ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
-      	   [ -n "$2" -a "${2:0:1}" != "-" -a "$2" != "copy" ] && shift && titleOptions="--title $1"
+         -T|--title )
+            [ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
+            [ -n "$2" -a "${2:0:1}" != "-" -a "$2" != "copy" ] && shift && titleOptions="--title $1"
             [ -n "$2" -a "copy" ] && shift && audioCopy=true
-      	   mode="TitleMode"
-      	;;
-      	-D|--directory )
-      	   [ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
-      	   [ -n "$2" -a "$2" = "-i" ] && error="Can't use input file with directory mode" && ErrorFound
-      	   mode="DirectoryMode"
-   		;;
+            mode="TitleMode"
+         ;;
+         -D|--directory )
+            [ -n "$mode" ] && error="Only one mode can be selected." && ErrorFound
+            [ -n "$2" -a "$2" = "-i" ] && error="Can't use input file with directory mode" && ErrorFound
+            mode="DirectoryMode"
+         ;;
          -c|--crop )
             [ $cropFlag ] && error="Only one crop can be set." && ErrorFound
             cropFlag=true
             shift
             otherSettings="$otherSettings --crop $1"
          ;;
-      	-i|--input )
-      	   shift
-      	   if [ -n "$1" -a "${1:0:1}" != "-" ] # "${1:0:1}" gets the first charater of string $1
-      	   then
-      	      fileName="$1"
-      	   else
-      	      error="$1 is not a valid input file."
-      	      ErrorFound
-      	   fi
-      	;;
-      	* )
-      		ErrorFound $@
-      	;;
+         -i|--input )
+            shift
+            if [ -n "$1" -a "${1:0:1}" != "-" ] # "${1:0:1}" gets the first charater of string $1
+            then
+               fileName="$1"
+            else
+               error="$1 is not a valid input file."
+               ErrorFound
+            fi
+         ;;
+         * )
+            ErrorFound $@
+         ;;
       esac
 
-     	shift
+      shift
 
-     	if [ "$#" = "0" ]; then
-     		break
-     	fi
+      if [ "$#" = "0" ]; then
+         break
+      fi
    done
 fi
 
