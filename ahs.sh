@@ -127,7 +127,7 @@ CheckAudio ()
       fi
       ((audioCount++))
    done
-   audioSettings="--audio $audioTracks --aencoder $audioEncoder --aq audioQuality --ab $audioBitrate --drc $drc"
+   audioSettings="--audio $audioTracks --aencoder $audioEncoder --aq $audioQuality --ab $audioBitrate --drc $drc"
 }
 
 CheckSubtitles ()
