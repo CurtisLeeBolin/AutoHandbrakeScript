@@ -84,11 +84,13 @@ CheckAudio ()
             audioTracks="$audioCount"
             audioEncoder="copy"
             audioBitrate="384"
+            audioQuality="0"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
             audioEncoder="$audioEncoder,copy"
             audioBitrate="$audioBitrate,384"
+            audioQuality="$audioQuality,0"
             drc="$drc,2.5"
          fi
       elif $(echo $item | grep -q -e "5.1")
@@ -98,11 +100,13 @@ CheckAudio ()
             audioTracks="$audioCount"
             audioEncoder="ac3"
             audioBitrate="384"
+            audioQuality="0"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
             audioEncoder="$audioEncoder,ac3"
             audioBitrate="$audioBitrate,384"
+            audioQuality="$audioQuality,0"
             drc="$drc,2.5"
          fi
       else
@@ -110,18 +114,20 @@ CheckAudio ()
          then
             audioTracks="$audioCount"
             audioEncoder="vorbis"
-            audioBitrate="64"
+            audioBitrate="0"
+            audioQuality="0.3"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
             audioEncoder="$audioEncoder,vorbis"
-            audioBitrate="$audioBitrate,64"
+            audioBitrate="$audioBitrate,0"
+            audioQuality="$audioQuality,0.3"
             drc="$drc,2.5"
          fi
       fi
       ((audioCount++))
    done
-   audioSettings="--audio $audioTracks --aencoder $audioEncoder --ab $audioBitrate --drc $drc"
+   audioSettings="--audio $audioTracks --aencoder $audioEncoder --aq audioQuality --ab $audioBitrate --drc $drc"
 }
 
 CheckSubtitles ()
