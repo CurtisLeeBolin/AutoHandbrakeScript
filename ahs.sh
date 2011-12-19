@@ -32,7 +32,7 @@ readonly DEFAULT_VIDEO_SETTINGS="--encoder x264 --two-pass --turbo --decomb --lo
 #--preset veryslow
 readonly DEFAULT_X264_SETTINGS="--encopts b-adapt=2:bframes=8:direct=auto:me=umh:merange=24:partitions=all:ref=16:subme=10:trellis=2:rc-lookahead=60"
 
-readonly DEFAULT_AUDIO_SETTINGS="--audio 1 --aencoder vorbis --ab 64 --mixdown dpl2 --arate 48 --drc 2.5"
+readonly DEFAULT_AUDIO_SETTINGS="--audio 1 --aencoder vorbis --aq 0.3 --mixdown dpl2 --arate 48 --drc 2.5"
 readonly DEFAULT_CHAPTER_SETTINGS="--markers"
 readonly DEFAULT_CONTAINER_TYPE="mkv"
 readonly DEFAULT_CONTAINER_SETTINGS="--format $DEFAULT_CONTAINER_TYPE"
@@ -85,12 +85,14 @@ CheckAudio ()
             audioEncoder="copy"
             audioBitrate="384"
             audioQuality="0"
+            audioSampleRate="48"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
             audioEncoder="$audioEncoder,copy"
             audioBitrate="$audioBitrate,384"
             audioQuality="$audioQuality,0"
+            audioSampleRate="$audioSampleRate,48"
             drc="$drc,2.5"
          fi
       elif $(echo $item | grep -q -e "5.1")
@@ -101,12 +103,14 @@ CheckAudio ()
             audioEncoder="ac3"
             audioBitrate="384"
             audioQuality="0"
+            audioSampleRate="48"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
             audioEncoder="$audioEncoder,ac3"
             audioBitrate="$audioBitrate,384"
             audioQuality="$audioQuality,0"
+            audioSampleRate="$audioSampleRate,48"
             drc="$drc,2.5"
          fi
       else
@@ -116,18 +120,20 @@ CheckAudio ()
             audioEncoder="vorbis"
             audioBitrate="0"
             audioQuality="0.3"
+            audioSampleRate="48"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
             audioEncoder="$audioEncoder,vorbis"
             audioBitrate="$audioBitrate,0"
             audioQuality="$audioQuality,0.3"
+            audioSampleRate="$audioSampleRate,48"
             drc="$drc,2.5"
          fi
       fi
       ((audioCount++))
    done
-   audioSettings="--audio $audioTracks --aencoder $audioEncoder --aq $audioQuality --ab $audioBitrate --drc $drc"
+   audioSettings="--audio $audioTracks --aencoder $audioEncoder --aq $audioQuality --ab $audioBitrate --arate $audioSampleRate --drc $drc"
 }
 
 CheckSubtitles ()
