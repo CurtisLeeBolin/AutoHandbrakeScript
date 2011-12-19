@@ -195,6 +195,8 @@ FileSearch ()
 
 IsoTranscode ()
 {
+   [ ! -d "$DEFAULT_PROCESSED_DIRECTORY" ] && mkdir -p "$DEFAULT_PROCESSED_DIRECTORY"
+   [ ! -d "$outputDirectory" ] && mkdir -p "$outputDirectory"
    mv "$inputFileName" "$DEFAULT_PROCESSED_DIRECTORY"/
    outputDirectory="${inputFileName%.*}"
    titleCount=$(HandBrakeCLI --scan --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" 2>&1 | grep "scan: DVD has")
