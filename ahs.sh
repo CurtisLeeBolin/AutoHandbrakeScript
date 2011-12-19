@@ -200,7 +200,7 @@ IsoTranscode ()
    titleCount=$(HandBrakeCLI --scan --input "$DEFAULT_PROCESSED_DIRECTORY"/"$inputFileName" 2>&1 | grep "scan: DVD has")
    titleCount="${titleCount:25}"
    titleCount="${titleCount%\ title(s)}"
-   for (( count=1; count<="$titleCount"; count++ ))
+   for (( count=1; count <= "$titleCount"; count++ ))
    do
       [ "$count" -lt "10" ] && number=0$count || number=$count
       [ $mode == "TitleMode" ] && titleOptions="--title $count" && otherSettings="$titleOptions" && videoName="Title$number"
