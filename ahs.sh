@@ -82,14 +82,14 @@ CheckAudio ()
          if [ "$audioCount" == "1" ]
          then
             audioTracks="$audioCount"
-            audioEncoder="copy"
+            audioEncoder="copy:ac3"
             audioBitrate="384"
             audioQuality="0"
             audioSampleRate="48"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
-            audioEncoder="$audioEncoder,copy"
+            audioEncoder="$audioEncoder,copy:ac3"
             audioBitrate="$audioBitrate,384"
             audioQuality="$audioQuality,0"
             audioSampleRate="$audioSampleRate,48"
@@ -100,14 +100,14 @@ CheckAudio ()
          if [ "$audioCount" == "1" ]
          then
             audioTracks="$audioCount"
-            audioEncoder="ac3"
+            audioEncoder="ffac3"
             audioBitrate="384"
             audioQuality="0"
             audioSampleRate="48"
             drc="2.5"
          else
             audioTracks="$audioTracks,$audioCount"
-            audioEncoder="$audioEncoder,ac3"
+            audioEncoder="$audioEncoder,ffac3"
             audioBitrate="$audioBitrate,384"
             audioQuality="$audioQuality,0"
             audioSampleRate="$audioSampleRate,48"
