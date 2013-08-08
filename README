@@ -1,3 +1,5 @@
+*NOTE: This is no longer developed
+
 This script simplifies the use of HandBrakeCLI for batch transcoding.
 
 This is written for the current HandBrakeCLI Snapshot. Thanks to John Stebbins for creating this Ubuntu PPA. https://launchpad.net/~stebbins/+archive/handbrake-snapshots
